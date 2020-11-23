@@ -29,3 +29,11 @@ public function getLoginInfo(json droneUserInfo) returns json {
 public function setInfo(json droneInfo) returns boolean {
     return updateDroneInfo(droneInfo.droneID.toString(), droneInfo.latitude.toString(), droneInfo.longitude.toString());
 }
+
+public function getDronesInfo(string droneID) returns @tainted json|error {
+    return selectDronesInfo(droneID);
+}
+
+public function getDroneLocation() returns json[] {
+    return selectDroneLocation();
+}

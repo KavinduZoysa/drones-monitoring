@@ -1,8 +1,7 @@
-import ballerina/mysql;
+import ballerinax/mysql;
 import ballerina/sql;
 import ballerina/io;
 import ballerina/log;
-import ballerina/time;
 
 string dbUser = "root";
 string dbPassword = "root";
@@ -89,10 +88,44 @@ public function getDroneUserInfo(string droneID, string password) returns @taint
     } 
 }
 
-public function updateDroneInfo(string droneId, string latitude, string longitude) returns boolean {
-    time:Time t = time:currentTime();  
+public function selectDronesInfo(string droneID) returns @tainted json|error {
+    sql:ParameterizedQuery SELECT_DRONES_INFO = `SELECT count(*) as count from drones_monitor.drones_info where droneID = ${droneID}`;
+    stream<record{}, error> resultStream = mysqlClient->query(SELECT_DRONES_INFO);
 
-    sql:ParameterizedQuery ADD_DRONE_INFO = `INSERT INTO drones_info(droneID, latitude, longitude, time) values (${droneId}, ${latitude}, ${longitude}, ${t.time.toString()})`;
+    record {|record {} value;|}|error? result = resultStream.next();
+    if (result is record {|record {} value;|}) {
+        return {
+            droneID : droneID,
+            count : result.value["count"].toString()
+        };
+    } else if (result is ()) {
+        return {
+            droneID : droneID,
+            count : ""
+        };
+    }
+    return <error>result;
+}
+
+public function selectDroneLocation() returns json[] {
+    stream<record{}, error> resultStream = mysqlClient->query(SELECT_DRONES_INFO);
+
+    json[] res = []; 
+    int i = 0;
+    error? e = resultStream.forEach(function(record {} result) {
+        json j = {
+            droneID : result["droneID"].toString(),
+            latitude : result["latitude"].toString(),
+            longitude : result["longitude"].toString()
+        };
+        res[i] = j;
+        i = i + 1;
+    });
+    return res;
+}
+
+public function updateDroneInfo(string droneId, string latitude, string longitude) returns boolean {
+    sql:ParameterizedQuery ADD_DRONE_INFO = `INSERT INTO drones_info(droneID, latitude, longitude, timestamp) values (${droneId}, ${latitude}, ${longitude}, UNIX_TIMESTAMP(now()))`;
     sql:ExecutionResult|sql:Error result = mysqlClient->execute(ADD_DRONE_INFO);
     if (result is sql:Error) {
         io:println(result);

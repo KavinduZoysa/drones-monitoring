@@ -8,7 +8,7 @@ observability-included=true
 [dependencies]
 
 [platform]
-target = "java8"
+target = "java11"
     [[platform.libraries]]
     artifactId = "mysql-connector-java"
     version = "8.0.11"

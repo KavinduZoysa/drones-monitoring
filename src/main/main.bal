@@ -15,12 +15,10 @@ service dronesMonitor on new http:Listener(9090) {
     }
     resource function healthCheck(http:Caller caller, http:Request req) {
         http:Response res = new;
-
         json responseJson = {
             "server": true
         };
         res.setJsonPayload(<@untainted>responseJson);
-
         respondClient(caller, res);
     }
 
@@ -29,13 +27,11 @@ service dronesMonitor on new http:Listener(9090) {
         path: "/populate-tables"
     }
     resource function populateTables(http:Caller caller, http:Request req) {
-        
         http:Response res = new;
         if (!populateTables()) {
             res.statusCode = 500;
             res.setPayload("Cannot create tables");
         }
-
         respondClient(caller, res);
     }
 
@@ -47,7 +43,6 @@ service dronesMonitor on new http:Listener(9090) {
         http:Response res = new;
 
         var payload = req.getJsonPayload();
-
         if (payload is json) {
             json responseJson = {
                 "success" : signUp(<@untainted>payload)
@@ -58,7 +53,6 @@ service dronesMonitor on new http:Listener(9090) {
             res.setPayload("Cannot signup");
             log:printError(ERROR_INVALID_FORMAT);
         }
-
         respondClient(caller, res);
     }
 
@@ -70,14 +64,12 @@ service dronesMonitor on new http:Listener(9090) {
         http:Response res = new;
 
         var payload = req.getJsonPayload();
-
         if (payload is json) {            
             res.setJsonPayload(<@untainted>getLoginInfo(<@untainted>payload));
         } else {
             res.statusCode = 500;
             log:printError(ERROR_INVALID_FORMAT);
         }
-
         respondClient(caller, res);
     }
 
@@ -89,14 +81,39 @@ service dronesMonitor on new http:Listener(9090) {
         http:Response res = new;
 
         var payload = req.getJsonPayload();
-
         if (payload is json) {            
             res.setJsonPayload(<@untainted>setInfo(<@untainted>payload));
         } else {
             res.statusCode = 500;
             log:printError(ERROR_INVALID_FORMAT);
         }
+        respondClient(caller, res);
+    }
 
+    @http:ResourceConfig {
+        methods: ["GET"],
+        path: "/get-drone-info/{droneID}"
+    }
+    resource function getDronesInfo(http:Caller caller, http:Request req, string droneID) {
+        http:Response res = new; 
+        json|error info = <@untainted>getDronesInfo(<@untainted>droneID);
+
+        if (info is json) {
+            res.setJsonPayload(info);
+        } else {
+            res.statusCode = 500;
+            log:printError(ERROR_INVALID_FORMAT);   
+        }         
+        respondClient(caller, res);
+    }
+
+    @http:ResourceConfig {
+        methods: ["GET"],
+        path: "/get-drone-location"
+    }
+    resource function getDroneLocation(http:Caller caller, http:Request req) {
+        http:Response res = new;           
+        res.setJsonPayload(<@untainted>getDroneLocation());
         respondClient(caller, res);
     }
 }
