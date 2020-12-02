@@ -2,13 +2,24 @@ import ballerina/http;
 import ballerina/log;
 import ballerina/io;
 
+http:ListenerConfiguration helloWorldEPConfig = {
+    secureSocket: {
+        keyStore: {
+            path: "/usr/lib/ballerina/distributions/ballerina-slp5/bre/security/ballerinaKeystore.p12",
+            password: "ballerina"
+        }
+    }
+};
+
+listener http:Listener helloWorldEP = new (9090, config = helloWorldEPConfig);
+
 @http:ServiceConfig {
     basePath: "/drones-monitor",
     cors: {
         allowOrigins: ["*"]
     }
 }
-service dronesMonitor on new http:Listener(9090) {
+service dronesMonitor on helloWorldEP {
     @http:ResourceConfig {
         methods: ["GET"],
         path: "/health-check"
