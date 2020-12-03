@@ -1,13 +1,12 @@
 import ballerina/http;
 import ballerina/log;
 import ballerina/io;
+import ballerina/config;
 
 http:ListenerConfiguration helloWorldEPConfig = {
     secureSocket: {
-        keyStore: {
-            path: "/usr/lib/ballerina/distributions/ballerina-slp5/bre/security/ballerinaKeystore.p12",
-            password: "ballerina"
-        }
+         keyFile: config:getAsString("key.file"),
+         certFile: config:getAsString("cert.file")
     }
 };
 
