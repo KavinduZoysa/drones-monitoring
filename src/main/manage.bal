@@ -37,3 +37,12 @@ public function getDronesInfo(string droneID) returns @tainted json|error {
 public function getDroneLocation() returns json[] {
     return selectDroneLocation();
 }
+
+public function getRestrictedAreas() returns json[] {
+    return selectRestrictedAreas();
+}
+
+public function setRestrictedArea(json polygon) returns boolean {
+    json[] points = <json[]> checkpanic polygon.points;
+    return insertRestrictedArea(polygon.areaId.toString(), points.length(), polygon.name.toString(), (checkpanic polygon.points).toJsonString());
+}

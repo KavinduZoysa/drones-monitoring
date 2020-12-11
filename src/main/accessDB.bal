@@ -38,6 +38,12 @@ public function createTables() returns boolean {
     }
     log:printInfo("Create drone_info table");
 
+    result = mysqlClient->execute(CREATE_RESTRICTED_AREA_INFO_TABLE);
+    if (result is sql:Error) {
+        return false;
+    }
+    log:printInfo("Create restricted_area table");
+
     return true;
 }
 
@@ -133,5 +139,33 @@ public function updateDroneInfo(string droneId, string latitude, string longitud
     }
 
     log:printInfo(io:sprintf("updated drone info %s, %s, %s successfully.", droneId, latitude, longitude));
+    return true;
+}
+
+public function addRestrictedArea(string name, int numOfPoints, string points) {
+    
+}
+
+public function selectRestrictedAreas() returns json[] {
+    stream<record{}, error> resultStream = mysqlClient->query(SELECT_RESTRICTED_AREAS);
+
+    json[] res = [];
+    int i = 0;
+    error? e = resultStream.forEach(function(record {} result) {
+        res[i] = checkpanic result["points"].toString().fromJsonFloatString();
+        i = i + 1;
+    });
+    return res;
+}
+
+public function insertRestrictedArea(string areaId, int numOfPoints, string name, string points) returns boolean {
+    sql:ParameterizedQuery ADD_DRONE_INFO = `INSERT INTO restricted_areas(areaId, name, numberOfPoints, points) values (${areaId}, ${name}, ${numOfPoints}, ${points})`;
+    sql:ExecutionResult|sql:Error result = mysqlClient->execute(ADD_DRONE_INFO);
+    if (result is sql:Error) {
+        io:println(result);
+        return false;
+    }
+
+    log:printInfo(io:sprintf("updated restricted area info %s, %s, %s successfully.", areaId, name, points));
     return true;
 }
