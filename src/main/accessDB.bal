@@ -2,11 +2,13 @@ import ballerinax/mysql;
 import ballerina/sql;
 import ballerina/io;
 import ballerina/log;
+import ballerina/lang.'float as floats;
 
 string dbUser = "root";
 string dbPassword = "root";
 string db = "drones_monitor";
 mysql:Client mysqlClient = initializeClients();
+float[][][] restrictedAreas = readRestrictedAreas();
 
 function initializeClients() returns mysql:Client {
     mysql:Client|sql:Error tempClient = new ("localhost", dbUser, dbPassword, db);
@@ -17,6 +19,26 @@ function initializeClients() returns mysql:Client {
         // check tempClient.close();
     }
     return <mysql:Client>tempClient;
+}
+
+function readRestrictedAreas() returns float[][][] {
+    stream<record{}, error> resultStream = mysqlClient->query(SELECT_RESTRICTED_AREAS);
+
+    float[][][] res = [];
+    int i = 0;
+    error? e = resultStream.forEach(function(record {} result) {
+        json[] points = <json[]> checkpanic result["points"].toString().fromJsonFloatString();
+        float[][] p = [];
+        int j = 0;
+        foreach json point in points {
+            p[j] = [<float> point.longitude, <float> point.latitude];
+            j = j + 1;
+        }
+        res[i] = p;
+        i = i + 1;
+    });
+    log:printInfo(res.toString());
+    return res;
 }
 
 public function createTables() returns boolean {
@@ -47,14 +69,14 @@ public function createTables() returns boolean {
     return true;
 }
 
-public function addDroneUser(json info, string droneID, string firstName, string lastName, string password) returns boolean {
-    sql:ParameterizedQuery ADD_DRONES_USER = `INSERT INTO users_info(droneID, firstName, lastName, password) values (${droneID}, ${firstName}, ${lastName}, ${password})`;
+public function addDroneUser(json info, string firstName, string lastName, string username, string password, string role) returns boolean {
+    sql:ParameterizedQuery ADD_DRONES_USER = `INSERT INTO users_info(firstName, lastName, username, password, role) values (${firstName}, ${lastName}, ${username}, ${password}, ${role})`;
     sql:ExecutionResult|sql:Error result = mysqlClient->execute(ADD_DRONES_USER);
     if (result is sql:Error) {
         return false;
     }
 
-    log:printInfo(io:sprintf("Added user %s successfully.", droneID));
+    log:printInfo(io:sprintf("Added user %s successfully.", username));
     return true;
 }
 
@@ -69,24 +91,26 @@ public function addAsRawData(string rawData) returns boolean {
 }
 
 type LoginInfo record {|
-    string droneID;
     string firstName;
     string lastName;
     string userID;
+    string username;
+    string role;
 |};
 
-public function getDroneUserInfo(string droneID, string password) returns @tainted json|boolean {
-    sql:ParameterizedQuery SELECT_DRONE_USER_INFO = `SELECT droneID, firstName, lastName, id as userID FROM users_info WHERE droneID = ${droneID} AND password = ${password}`;
+public function getDroneUserInfo(string username, string password) returns @tainted json|boolean {
+    sql:ParameterizedQuery SELECT_DRONE_USER_INFO = `SELECT firstName, lastName, id, username, role FROM users_info WHERE username = ${username} AND password = ${password}`;
     stream<record{}, error> resultStream = mysqlClient->query(SELECT_DRONE_USER_INFO);
 
     record {|record {} value;|}|error? result = resultStream.next();
     if (result is record {|record {} value;|}) {
         record {} r = result.value;
         json j = {
-            droneID : r["droneID"].toString(),
             firstName : r["firstName"].toString(),
             lastName : r["lastName"].toString(),
-            userID : r["userID"].toString()
+            userID : r["id"].toString(),
+            username : r["username"].toString(),
+            role : r["role"].toString()
         };
         return j;
     } else if (result is error) {
@@ -119,10 +143,20 @@ public function selectDroneLocation() returns json[] {
     json[] res = []; 
     int i = 0;
     error? e = resultStream.forEach(function(record {} result) {
+        float lat = checkpanic floats:fromString(result["latitude"].toString());
+        float long = checkpanic floats:fromString(result["longitude"].toString());
+        boolean isInRestrictedArea = false;
+        foreach float[][] area in restrictedAreas {
+            if (isInsidePolygon(area, [long, lat])) {
+                break;
+            }
+        }
+
         json j = {
             droneID : result["droneID"].toString(),
-            latitude : result["latitude"].toString(),
-            longitude : result["longitude"].toString()
+            latitude : lat.toString(),
+            longitude : long.toString(),
+            isRestricted : isInRestrictedArea
         };
         res[i] = j;
         i = i + 1;
@@ -142,10 +176,6 @@ public function updateDroneInfo(string droneId, string latitude, string longitud
     return true;
 }
 
-public function addRestrictedArea(string name, int numOfPoints, string points) {
-    
-}
-
 public function selectRestrictedAreas() returns json[] {
     stream<record{}, error> resultStream = mysqlClient->query(SELECT_RESTRICTED_AREAS);
 
@@ -158,14 +188,15 @@ public function selectRestrictedAreas() returns json[] {
     return res;
 }
 
-public function insertRestrictedArea(string areaId, int numOfPoints, string name, string points) returns boolean {
-    sql:ParameterizedQuery ADD_DRONE_INFO = `INSERT INTO restricted_areas(areaId, name, numberOfPoints, points) values (${areaId}, ${name}, ${numOfPoints}, ${points})`;
+public function insertRestrictedArea(int numOfPoints, string name, string points) returns boolean {
+    sql:ParameterizedQuery ADD_DRONE_INFO = `INSERT INTO restricted_areas(name, numberOfPoints, points) values (${name}, ${numOfPoints}, ${points})`;
     sql:ExecutionResult|sql:Error result = mysqlClient->execute(ADD_DRONE_INFO);
     if (result is sql:Error) {
         io:println(result);
         return false;
     }
 
-    log:printInfo(io:sprintf("updated restricted area info %s, %s, %s successfully.", areaId, name, points));
+    log:printInfo(io:sprintf("updated restricted area info %s, %s successfully.", name, points));
+    restrictedAreas = readRestrictedAreas();
     return true;
 }

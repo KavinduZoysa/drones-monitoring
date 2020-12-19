@@ -4,11 +4,11 @@ public function populateTables() returns boolean {
 }
 
 public function signUp(json info) returns boolean {
-    return addDroneUser(info, info.droneID.toString(), info.firstName.toString(), info.lastName.toString(), info.password.toString());
+    return addDroneUser(info, info.firstName.toString(), info.lastName.toString(), info.username.toString(), info.password.toString(), info.role.toString());
 }
 
 public function getLoginInfo(json droneUserInfo) returns json {
-    json? userInfo = getDroneUserInfo(droneUserInfo.droneID.toString(), droneUserInfo.password.toString());
+    json? userInfo = getDroneUserInfo(droneUserInfo.username.toString(), droneUserInfo.password.toString());
 
     io:println(userInfo);
     json responseJson = {};
@@ -44,5 +44,39 @@ public function getRestrictedAreas() returns json[] {
 
 public function setRestrictedArea(json polygon) returns boolean {
     json[] points = <json[]> checkpanic polygon.points;
-    return insertRestrictedArea(polygon.areaId.toString(), points.length(), polygon.name.toString(), (checkpanic polygon.points).toJsonString());
+    return insertRestrictedArea(points.length(), polygon.name.toString(), (checkpanic polygon.points).toJsonString());
+}
+
+function isInsidePolygon(float[][] polygon, float[] position) returns boolean {
+    float lat = position[0];
+    float lng = position[1];
+
+    int l = polygon.length();
+    int j = l - 1;
+    io:println("i : ", 0, " j : ", j);
+    boolean inside = checkPoints(polygon[0], polygon[j], position, false);
+    foreach var i in 0..<l-1 {
+        j = i + 1;
+        inside = checkPoints(polygon[i], polygon[j], position, inside);
+    } 
+    return inside;    
+}
+
+function checkPoints(float[] pointA, float[] pointB, float[] position, boolean inside) returns boolean {
+    float latA = pointA[1];
+    float lngA = pointA[0];
+
+    float latB = pointB[1];
+    float lngB = pointB[0];
+
+    float latP = position[1];
+    float lngP = position[0];   
+    // y -> lat
+    // x -> lng 
+
+    boolean intersect = ((lngA > lngP) != (lngB > lngP)) && (latP < (latA - latB) * (lngP - lngB)/(lngA - lngB) + latB);
+    if (intersect) {
+        return !inside;
+    }
+    return inside;
 }
