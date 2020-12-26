@@ -1,6 +1,5 @@
 import ballerina/http;
 import ballerina/log;
-import ballerina/io;
 import ballerina/config;
 
 http:ListenerConfiguration helloWorldEPConfig = {
@@ -153,11 +152,32 @@ service dronesMonitor on helloWorldEP {
         }
         respondClient(caller, res);
     }
+
+    @http:ResourceConfig {
+        methods: ["POST"],
+        path: "/delete-restricted-area"
+    }
+    resource function deleteRestrictedAreas(http:Caller caller, http:Request req) {
+        http:Response res = new;
+
+        var payload = req.getJsonPayload();
+        if (payload is json) {  
+            if (<@untainted>deleteRestrictedArea(<@untainted>payload)) {
+                res.statusCode = 200;
+            } else {
+                res.statusCode = 501;
+            }         
+        } else {
+            res.statusCode = 500;
+            log:printError(ERROR_INVALID_FORMAT);
+        }
+        respondClient(caller, res);
+    }
 }
 
 public function respondClient(http:Caller caller, http:Response res) {
     var result = caller->respond(res);
     if (result is error) {
-        io:print(result);
+        log:printError(result.toString());
     }       
 }

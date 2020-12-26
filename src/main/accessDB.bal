@@ -182,9 +182,8 @@ public function selectRestrictedAreas() returns json[] {
     json[] res = [];
     int i = 0;
     error? e = resultStream.forEach(function(record {} result) {
-        // res[i] = checkpanic result["points"].toString().fromJsonFloatString();
         res[i] = {
-            ID : result["areaID"].toString(),
+            ID : <int> result["areaId"],
             name : result["name"].toString(),
             points : checkpanic result["points"].toString().fromJsonFloatString()
         };
@@ -202,6 +201,19 @@ public function insertRestrictedArea(int numOfPoints, string name, string points
     }
 
     log:printInfo(io:sprintf("updated restricted area info %s, %s successfully.", name, points));
+    restrictedAreas = readRestrictedAreas();
+    return true;
+}
+
+public function reomveRestrictedArea(int id) returns boolean {
+    sql:ParameterizedQuery DELETE_RETRICTED_AREA = `DELETE FROM restricted_areas WHERE areaId = ${id}`;
+    sql:ExecutionResult|sql:Error result = mysqlClient->execute(DELETE_RETRICTED_AREA);
+    if (result is sql:Error) {
+        io:println(result);
+        return false;
+    }
+
+    log:printInfo(io:sprintf("deleted restricted area %s successfully.", id));
     restrictedAreas = readRestrictedAreas();
     return true;
 }

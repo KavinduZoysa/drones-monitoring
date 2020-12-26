@@ -42,6 +42,10 @@ public function getRestrictedAreas() returns json[] {
     return selectRestrictedAreas();
 }
 
+public function deleteRestrictedArea(json areaInfo) returns boolean {
+    return reomveRestrictedArea(<int> areaInfo.ID);
+}
+
 public function setRestrictedArea(json polygon) returns boolean {
     json[] points = <json[]> checkpanic polygon.points;
     return insertRestrictedArea(points.length(), polygon.name.toString(), (checkpanic polygon.points).toJsonString());
