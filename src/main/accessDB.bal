@@ -182,7 +182,12 @@ public function selectRestrictedAreas() returns json[] {
     json[] res = [];
     int i = 0;
     error? e = resultStream.forEach(function(record {} result) {
-        res[i] = checkpanic result["points"].toString().fromJsonFloatString();
+        // res[i] = checkpanic result["points"].toString().fromJsonFloatString();
+        res[i] = {
+            ID : result["areaID"].toString(),
+            name : result["name"].toString(),
+            points : checkpanic result["points"].toString().fromJsonFloatString()
+        };
         i = i + 1;
     });
     return res;
