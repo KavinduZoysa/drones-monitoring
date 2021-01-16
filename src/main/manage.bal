@@ -1,3 +1,4 @@
+import ballerina/'log;
 import ballerina/io;
 public function populateTables() returns boolean {
     return createTables();
@@ -27,7 +28,17 @@ public function getLoginInfo(json droneUserInfo) returns json {
 }
 
 public function setInfo(json droneInfo) returns boolean {
-    return updateDroneInfo(droneInfo.droneID.toString(), droneInfo.latitude.toString(), droneInfo.longitude.toString());
+    json|error id = droneInfo.droneID;
+    json|error lat = droneInfo.latitude;
+    json|error long = droneInfo.longitude;
+    if (id is error || lat is error || long is error) {
+        log:printError("Invalid input");
+        log:printError(id.toString());
+        log:printError(lat.toString());
+        log:printError(long.toString());
+        return false;
+    }
+    return updateDroneInfo(id.toString(), lat.toString(), long.toString());
 }
 
 public function getDronesInfo(string droneID) returns @tainted json|error {
