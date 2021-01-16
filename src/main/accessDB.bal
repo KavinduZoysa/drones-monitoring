@@ -90,19 +90,12 @@ public function addAsRawData(string rawData) returns boolean {
     return true;
 }
 
-type LoginInfo record {|
-    string firstName;
-    string lastName;
-    string userID;
-    string username;
-    string role;
-|};
-
 public function getDroneUserInfo(string username, string password) returns @tainted json|boolean {
     sql:ParameterizedQuery SELECT_DRONE_USER_INFO = `SELECT firstName, lastName, id, username, role FROM users_info WHERE username = ${username} AND password = ${password}`;
     stream<record{}, error> resultStream = mysqlClient->query(SELECT_DRONE_USER_INFO);
 
     record {|record {} value;|}|error? result = resultStream.next();
+    checkpanic resultStream.close();
     if (result is record {|record {} value;|}) {
         record {} r = result.value;
         json j = {
@@ -123,6 +116,7 @@ public function selectDronesInfo(string droneID) returns @tainted json|error {
     stream<record{}, error> resultStream = mysqlClient->query(SELECT_DRONES_INFO);
 
     record {|record {} value;|}|error? result = resultStream.next();
+    checkpanic resultStream.close();
     if (result is record {|record {} value;|}) {
         return {
             droneID : droneID,
@@ -161,6 +155,7 @@ public function selectDroneLocation() returns json[] {
         res[i] = j;
         i = i + 1;
     });
+    checkpanic resultStream.close();
     return res;
 }
 
@@ -189,6 +184,7 @@ public function selectRestrictedAreas() returns json[] {
         };
         i = i + 1;
     });
+    checkpanic resultStream.close();
     return res;
 }
 
