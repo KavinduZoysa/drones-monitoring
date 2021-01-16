@@ -137,11 +137,15 @@ public function selectDroneLocation() returns json[] {
     json[] res = []; 
     int i = 0;
     error? e = resultStream.forEach(function(record {} result) {
-        float lat = checkpanic floats:fromString(result["latitude"].toString());
-        float long = checkpanic floats:fromString(result["longitude"].toString());
+        float|error lat = floats:fromString(result["latitude"].toString());
+        float|error long = floats:fromString(result["longitude"].toString());
+        if (lat is error || long is error) {
+            log:printError("Invalid latitude and longitute at " + result["timestamp"].toString());
+        }
         boolean isInRestrictedArea = false;
         foreach float[][] area in restrictedAreas {
-            if (isInsidePolygon(area, [long, lat])) {
+            if (isInsidePolygon(area, [checkpanic long, checkpanic lat])) {
+                isInRestrictedArea = true;
                 break;
             }
         }

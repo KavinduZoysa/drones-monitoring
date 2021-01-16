@@ -57,7 +57,6 @@ function isInsidePolygon(float[][] polygon, float[] position) returns boolean {
 
     int l = polygon.length();
     int j = l - 1;
-    io:println("i : ", 0, " j : ", j);
     boolean inside = checkPoints(polygon[0], polygon[j], position, false);
     foreach var i in 0..<l-1 {
         j = i + 1;
