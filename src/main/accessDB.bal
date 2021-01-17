@@ -195,6 +195,7 @@ public function selectRestrictedAreas() returns json[] {
 
 public function insertRestrictedArea(int numOfPoints, string name, string points) returns boolean {
     sql:ParameterizedQuery ADD_DRONE_INFO = `INSERT INTO restricted_areas(name, numberOfPoints, points) values (${name}, ${numOfPoints}, ${points})`;
+    io:println(points);
     sql:ExecutionResult|sql:Error result = mysqlClient->execute(ADD_DRONE_INFO);
     if (result is sql:Error) {
         io:println(result);
