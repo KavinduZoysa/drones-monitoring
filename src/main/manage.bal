@@ -49,6 +49,10 @@ public function getDroneLocation() returns json[] {
     return selectDroneLocation();
 }
 
+public function getAllDroneLocation() returns json[] {
+    return selectAllDroneLocation();
+}
+
 public function getRestrictedAreas() returns json[] {
     return selectRestrictedAreas();
 }

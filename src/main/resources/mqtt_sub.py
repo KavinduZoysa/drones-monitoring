@@ -11,6 +11,7 @@ mydb = mysql.connector.connect(
 )
 
 db_client = mydb.cursor()
+print("Connection to database is : ", mydb.is_connected())
 sql = "INSERT INTO drones_info (droneID, latitude, longitude, timestamp) VALUES (%s, %s, %s, %s)"
 
 ## {"droneID": "000X","latitude": 6.4432,"longitude": 80.64}
@@ -26,10 +27,10 @@ def on_connect(client, userdata, flags, rc):
 def on_disconnect(client, userdata, rc):
     if rc != 0:
         print("Unexpected disconnection.")
-        db_client.close()
 
 
 def update_drone_info(droneID, lat, long):
+    print("When updating the table, connection to database is : ", mydb.is_connected())
     db_client.execute(sql, (droneID, lat, long, round(time.time())))
     mydb.commit()
 

@@ -2,6 +2,7 @@ import ballerinax/mysql;
 import ballerina/sql;
 import ballerina/io;
 import ballerina/log;
+import ballerina/time;
 import ballerina/lang.'float as floats;
 
 string dbUser = "root";
@@ -131,7 +132,60 @@ public function selectDronesInfo(string droneID) returns @tainted json|error {
     return <error>result;
 }
 
-public function selectDroneLocation() returns json[] {
+public function selectDroneLocation() returns @untainted json[] {
+    time:Time time = time:currentTime();
+    int t = time.time/1000;
+    stream<record{}, error> resultStream = mysqlClient->query(SELECT_DRONES_INFO);
+
+    json[] res = []; 
+    int i = 0;
+
+    while(true) {
+        var result = resultStream.next();
+        if (result == ()) {
+            break;
+        }
+        if (result is error) {
+            continue;
+        }
+
+        record{} val = <record {}> result;
+        record{} droneLocation = <record {}> val["value"];
+        float|error tempLat = floats:fromString(droneLocation["latitude"].toString());
+        float|error tempLong = floats:fromString(droneLocation["longitude"].toString());
+        if (tempLat is error || tempLong is error) {
+            log:printError("Invalid latitude and longitute at " + droneLocation["timestamp"].toString());
+            continue;
+        } 
+        float lat = <float> tempLat;
+        float long = <float> tempLong;
+
+        boolean isInRestrictedArea = false;
+        foreach float[][] area in restrictedAreas {
+            if (isInsidePolygon(area, [long, lat])) {
+                isInRestrictedArea = true;
+                break;
+            }
+        }
+        if (t - <int> droneLocation["timestamp"] > 20) {
+            continue;
+        }
+
+        json j = {
+            droneID : droneLocation["droneID"].toString(),
+            latitude : lat.toString(),
+            longitude : long.toString(),
+            isRestricted : isInRestrictedArea
+        };
+        res[i] = j;
+        i = i + 1;
+    }
+
+    checkpanic resultStream.close();
+    return res;
+}
+
+public function selectAllDroneLocation() returns json[] {
     stream<record{}, error> resultStream = mysqlClient->query(SELECT_DRONES_INFO);
 
     json[] res = []; 
