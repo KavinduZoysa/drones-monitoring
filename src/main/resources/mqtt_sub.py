@@ -3,16 +3,18 @@ import mysql.connector
 import time
 import json
 
-mydb = mysql.connector.connect(
-  host="localhost",
-  user="root",
-  password="root",
-  database="drones_monitor"
-)
 
-db_client = mydb.cursor()
-print("Connection to database is : ", mydb.is_connected())
-sql = "INSERT INTO drones_info (droneID, latitude, longitude, timestamp) VALUES (%s, %s, %s, %s)"
+def connect_db():
+    mydb = mysql.connector.connect(
+        host=HOST,
+        user=USER,
+        password=PASSWORD,
+        database=DATABASE
+    )
+    db_client1 = mydb.cursor()
+    print("Connection to database is : ", mydb.is_connected())
+    return mydb, db_client1
+
 
 ## {"droneID": "000X","latitude": 6.4432,"longitude": 80.64}
 def on_connect(client, userdata, flags, rc):
@@ -30,7 +32,12 @@ def on_disconnect(client, userdata, rc):
 
 
 def update_drone_info(droneID, lat, long):
+    global mydb
+    global db_client
     print("When updating the table, connection to database is : ", mydb.is_connected())
+    if not mydb.is_connected():
+        mydb, db_client = connect_db()
+
     db_client.execute(sql, (droneID, lat, long, round(time.time())))
     mydb.commit()
 
@@ -50,6 +57,13 @@ user = "username"
 password = "password"
 topic = "testtopic/1"
 
+HOST = "localhost"
+USER = "root"
+PASSWORD = "root"
+DATABASE = "drones_monitor"
+sql = "INSERT INTO drones_info (droneID, latitude, longitude, timestamp) VALUES (%s, %s, %s, %s)"
+
+mydb, db_client = connect_db()
 
 client = mqttClient.Client("Drone Info Receiver")
 # client.username_pw_set(user, password=password)

@@ -128,6 +128,16 @@ service dronesMonitor on helloWorldEP {
 
     @http:ResourceConfig {
         methods: ["GET"],
+        path: "/get-all-drone-location"
+    }
+    resource function getDroneAllLocation(http:Caller caller, http:Request req) {
+        http:Response res = new;           
+        res.setJsonPayload(<@untainted>getAllDroneLocation());
+        respondClient(caller, res);
+    }
+
+    @http:ResourceConfig {
+        methods: ["GET"],
         path: "/get-restricted-areas"
     }
     resource function getRestrictedAreas(http:Caller caller, http:Request req) {
