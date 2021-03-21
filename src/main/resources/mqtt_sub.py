@@ -45,7 +45,12 @@ def update_drone_info(droneID, lat, long):
 def on_message(client, userdata, message):
     msg = str(message.payload.decode("utf-8"))
     print("Message received: " + msg)
-    j = json.loads(msg)
+    try:
+        j = json.loads(msg)
+    except ValueError as e:
+        print(e)
+        return
+
     update_drone_info(j["droneID"], j["latitude"], j["longitude"])
 
 
